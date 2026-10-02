@@ -1,0 +1,20 @@
+{
+  "node_type": "Seq Scan",
+  "startup_cost": 0.0,
+  "total_cost": 11.7,
+  "estimated_rows": 170,
+  "estimated_width": 434,
+  "schema_name": null,
+  "relation_name": "members",
+  "alias": "members",
+  "index_name": null,
+  "filter": null,
+  "index_condition": null,
+  "join_condition": null,
+  "children": [],
+  "extra": {
+    "Parallel Aware": false,
+    "Async Capable": false,
+    "Disabled": false
+  }
+}

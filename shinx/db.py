@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from shinx.shared.models.db_metadata import DBMetadata, TableMetaData, Column, Constraint, View, Index
+
+from shinx.shared.models.db_metadata import (DBMetadata, TableMetaData, Column, Constraint, View, Index)
+from shinx.shared.models.plan_node import PlanNode
 
 class DatabaseAdapter(ABC):
     def __init__(self):
@@ -11,6 +13,10 @@ class DatabaseAdapter(ABC):
 
     @abstractmethod
     def get_database_structure(self) -> DBMetadata:
+        ...
+
+    @abstractmethod
+    def explain(self, query) -> PlanNode:
         ...
 
     @abstractmethod
