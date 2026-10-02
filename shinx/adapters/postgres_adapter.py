@@ -13,7 +13,7 @@ from shinx.shared.models.db_metadata import (
     View,
     ViewColumn,
 )
-
+from shinx.shared.models.plan_node import PlanNode
 
 class PostgresAdapter(DatabaseAdapter):
     def __init__(self, host, port, dbname, user, password):
@@ -32,6 +32,34 @@ class PostgresAdapter(DatabaseAdapter):
                 self._connection.close()
             finally:
                 self._connection = None
+
+    def get_database_structure(self) -> DBMetadata:
+            self._ensure_connected()
+            database_info = self._get_database_info()
+            tables = self._get_tables()
+            views = self._get_views()
+    
+            return DBMetadata(
+                version=database_info["version"],
+                extensions=[Extension(**item) for item in database_info["extensions"]],
+                tables=tables,
+                views=views,
+            )
+
+    def explain(self, query) -> PlanNode:
+        self._ensure_connected()
+        conn = self._connection
+        if conn is None:
+            raise RuntimeError("Not connected to a PostgreSQL database")
+        with conn.cursor() as cur:
+            cur.execute(f"EXPLAIN (FORMAT JSON) {query}")            
+            result = cur.fetchone()
+        
+        if result is None:
+            raise RuntimeError("PostgreSQL returned no execution plan")
+
+        raw_plan = result[0]
+        return PlanNode.from_postgres(raw_plan[0]["Plan"])
 
     def _ensure_connected(self):
         if not self._connection:
@@ -82,19 +110,6 @@ class PostgresAdapter(DatabaseAdapter):
             ]
 
         return {"version": version, "extensions": extensions}
-
-    def get_database_structure(self) -> DBMetadata:
-        self._ensure_connected()
-        database_info = self._get_database_info()
-        tables = self._get_tables()
-        views = self._get_views()
-
-        return DBMetadata(
-            version=database_info["version"],
-            extensions=[Extension(**item) for item in database_info["extensions"]],
-            tables=tables,
-            views=views,
-        )
 
     def _get_tables(self) -> list[TableMetaData]:
         self._ensure_connected()
