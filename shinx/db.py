@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from shinx.shared.models.db_metadata import DBMetadata, TableMetaData, Column, Constraint, View, Index
 
 class DatabaseAdapter(ABC):
     def __init__(self):
@@ -9,25 +10,29 @@ class DatabaseAdapter(ABC):
         ...
 
     @abstractmethod
-    def get_database_info(self) -> dict:
+    def get_database_structure(self) -> DBMetadata:
         ...
 
     @abstractmethod
-    def get_tables(self) -> list:
+    def _get_database_info(self) -> dict:
         ...
 
     @abstractmethod
-    def get_columns(self, schema, table) -> list:
+    def _get_tables(self) -> list[TableMetaData]:
         ...
 
     @abstractmethod
-    def get_constraints(self, schema, table) -> list:
+    def _get_columns(self, schema, table) -> list[Column]:
         ...
 
     @abstractmethod
-    def get_indexes(self, schema, table) -> list:
+    def _get_constraints(self, schema, table) -> list[Constraint]:
         ...
 
     @abstractmethod
-    def get_views(self) -> list:
+    def _get_indexes(self, schema, table) -> list[Index]:
+        ...
+
+    @abstractmethod
+    def _get_views(self) -> list[View]:
         ...
