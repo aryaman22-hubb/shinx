@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
+from __future__ import annotations
+
 from typing import Any
+from pydantic import BaseModel, Field
 
 class PlanNode(BaseModel):
     node_type: str
@@ -18,14 +20,9 @@ class PlanNode(BaseModel):
     index_condition: str | None = None
     join_condition: str | None = None
 
-    # plan mode returns hierarchical structure for complex queries
     children: list["PlanNode"] = Field(default_factory=list)
-
-    # those we are not covering
     extra: dict[str, Any] = Field(default_factory=dict)
 
-
-    # postgres specific normalization
     @classmethod
     def from_postgres(cls, node: dict[str, Any]) -> PlanNode:
         known_fields = {

@@ -42,3 +42,19 @@ class DatabaseAdapter(ABC):
     @abstractmethod
     def _get_views(self) -> list[View]:
         ...
+
+    @abstractmethod
+    def get_table_metadata(self, table_name: str, schema_name: str = "public") -> TableMetaData | None:
+        ...
+
+    @abstractmethod
+    def list_table_names(self, schema_name: str = "public") -> list[str]:
+        ...
+
+    @abstractmethod
+    def get_database_info(self) -> dict:
+        ...
+
+    @abstractmethod
+    def get_table_stats(self, table_name: str, schema_name: str = "public") -> dict:
+        ...

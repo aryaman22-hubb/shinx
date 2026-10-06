@@ -1,41 +1,41 @@
+import os
 import pprint
-import json
 
 from shinx.adapters.postgres_adapter import PostgresAdapter
-from shinx.services.db_service import DBService
+from shinx.agents.optimizer_agent import OptimizerAgent
+from shinx.services.llm import get_llm_provider
+from shinx.tools import create_db_tool_registry
 
-from shinx.shared.models.db_metadata import DBMetadata
-from shinx.shared.models.plan_node import PlanNode
-from shinx.shared.models.query_analysis import QueryAnalysis
 
-p = PostgresAdapter(
-    host="localhost",
-    port=5432,
-    dbname="postgres",
-    user="postgres",
-    password="postgres"
-)
+def main():
+    query = "SELECT * FROM members WHERE status = 'ACTIVE' ORDER BY created_at DESC;"
 
-query = "select * from members;"
+    print("Connecting to PostgreSQL...")
+    try:
+        adapter = PostgresAdapter(
+            host=os.getenv("PGHOST", "localhost"),
+            port=int(os.getenv("PGPORT", "5432")),
+            dbname=os.getenv("PGDATABASE", "postgres"),
+            user=os.getenv("PGUSER", "postgres"),
+            password=os.getenv("PGPASSWORD", "postgres"),
+        )
+    except Exception as e:
+        print(f"Error connecting to PostgreSQL database: {e}")
+        print("Tip: Run 'python demo/demo_agent.py' to test the agent with an offline simulated database.")
+        return
 
-# create a structured input for LLM
-db_service = DBService(p)
+    tools = create_db_tool_registry(adapter)
+    llm = get_llm_provider()
+    agent = OptimizerAgent(llm=llm, tools=tools, verbose=True)
 
-db_metadata: DBMetadata | None = db_service.crawl()
-if db_metadata is None:
-    raise ValueError("Failed to crawl database metadata")
+    print(f"\nRunning Shinx Optimizer Agent for query: {query}\n")
+    report = agent.optimize(query)
 
-exlain_plan: PlanNode | None = db_service.explain(query)
-if exlain_plan is None:
-    raise ValueError("Failed to explain query plan")
+    print("\n" + "=" * 60)
+    print(" SHINX OPTIMIZATION REPORT")
+    print("=" * 60)
+    pprint.pprint(report.model_dump())
 
-query_analysis = QueryAnalysis(query=query, dbMetdata=db_metadata, plan=exlain_plan)
 
-pprint.pprint(query_analysis.model_dump())
-#  Uncomment incase you need to print it
-# with open("query_analysis.json", "w", encoding="utf-8") as f:
-#     json.dump(
-#         query_analysis.model_dump(),
-#         f,
-#         indent=2,
-#     )
+if __name__ == "__main__":
+    main()
