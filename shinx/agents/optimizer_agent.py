@@ -3,7 +3,8 @@ import re
 from typing import Any
 
 from shinx.prompts.optimizer_prompt import OPTIMIZER_SYSTEM_PROMPT
-from shinx.services.llm.base import BaseLLMProvider, LLMMessage
+from shinx.services.llm_service import LLMService
+from shinx.shared.models.llm import LLMMessage
 from shinx.shared.models.suggestion import OptimizationReport, Suggestion, SuggestionType, ImpactLevel
 from shinx.tools.base import ToolRegistry
 
@@ -11,7 +12,7 @@ from shinx.tools.base import ToolRegistry
 class OptimizerAgent:
     def __init__(
         self,
-        llm: BaseLLMProvider,
+        llm: LLMService,
         tools: ToolRegistry,
         max_turns: int = 6,
         verbose: bool = True,

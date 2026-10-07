@@ -12,7 +12,8 @@ except ImportError:
 
 from shinx.agents.optimizer_agent import OptimizerAgent
 from shinx.db import DatabaseAdapter
-from shinx.services.llm import get_llm_provider
+from shinx.services.llm_service import LLMService
+from shinx.services.providers.gemini_provider import GeminiProvider
 from shinx.shared.models.db_metadata import Column, Constraint, DBMetadata, Index, TableMetaData
 from shinx.shared.models.plan_node import PlanNode
 from shinx.tools import create_db_tool_registry
@@ -131,11 +132,12 @@ def main():
         print("[!] Note: GEMINI_API_KEY is not detected in environment.")
         print("    Running offline simulated verification...\n")
         from tests.test_optimizer_agent import ScriptedMockLLMProvider
-        llm = ScriptedMockLLMProvider()
+        provider = ScriptedMockLLMProvider()
     else:
-        llm = get_llm_provider()
+        provider = GeminiProvider()
 
-    agent = OptimizerAgent(llm=llm, tools=tools, verbose=True)
+    llm_service = LLMService(provider)
+    agent = OptimizerAgent(llm=llm_service, tools=tools, verbose=True)
     report = agent.optimize(query)
     print_report(report)
 

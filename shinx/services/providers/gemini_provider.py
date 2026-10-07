@@ -1,10 +1,12 @@
 import json
 import os
+import time
 import uuid
 from typing import Any
 import httpx
 
-from shinx.services.llm.base import BaseLLMProvider, LLMMessage, LLMResponse, ToolCall
+from shinx.services.providers.base import BaseLLMProvider
+from shinx.shared.models.llm import LLMMessage, LLMResponse, ToolCall
 
 
 class GeminiProvider(BaseLLMProvider):
@@ -95,7 +97,6 @@ class GeminiProvider(BaseLLMProvider):
             if response.status_code == 200:
                 break
             if response.status_code in (429, 503) and attempt < max_retries - 1:
-                import time
                 time.sleep(1.5 * (attempt + 1))
                 continue
             raise RuntimeError(f"Gemini API Error {response.status_code}: {response.text}")

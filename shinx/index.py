@@ -3,7 +3,8 @@ import pprint
 
 from shinx.adapters.postgres_adapter import PostgresAdapter
 from shinx.agents.optimizer_agent import OptimizerAgent
-from shinx.services.llm import get_llm_provider
+from shinx.services.llm_service import LLMService
+from shinx.services.providers.gemini_provider import GeminiProvider
 from shinx.tools import create_db_tool_registry
 
 
@@ -25,8 +26,9 @@ def main():
         return
 
     tools = create_db_tool_registry(adapter)
-    llm = get_llm_provider()
-    agent = OptimizerAgent(llm=llm, tools=tools, verbose=True)
+    provider = GeminiProvider()
+    llm_service = LLMService(provider)
+    agent = OptimizerAgent(llm=llm_service, tools=tools, verbose=True)
 
     print(f"\nRunning Shinx Optimizer Agent for query: {query}\n")
     report = agent.optimize(query)

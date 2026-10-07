@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from typing import Any
 from pydantic import BaseModel, Field
 
@@ -10,7 +9,7 @@ class ToolCall(BaseModel):
 
 
 class LLMMessage(BaseModel):
-    role: str  # "system", "user", "assistant", "tool"
+    role: str
     content: str | None = None
     tool_calls: list[ToolCall] = Field(default_factory=list)
     tool_call_id: str | None = None
@@ -24,14 +23,3 @@ class LLMResponse(BaseModel):
     @property
     def has_tool_calls(self) -> bool:
         return len(self.tool_calls) > 0
-
-
-class BaseLLMProvider(ABC):
-    @abstractmethod
-    def generate(
-        self,
-        messages: list[LLMMessage],
-        tools: list[dict[str, Any]] | None = None,
-    ) -> LLMResponse:
-        """Generates a response from the LLM, either containing tool calls or final content."""
-        ...
