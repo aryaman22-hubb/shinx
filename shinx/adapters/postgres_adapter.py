@@ -385,7 +385,98 @@ class PostgresAdapter(DatabaseAdapter):
             )
             views.append(view)
 
-        return views
-
     def get_views(self):
         return self._get_views()
+
+    def get_database_info(self) -> dict:
+        return self._get_database_info()
+
+    def list_table_names(self, schema_name: str = "public") -> list[str]:
+        self._ensure_connected()
+        conn = self._connection
+        if conn is None:
+            raise RuntimeError("Not connected to a PostgreSQL database")
+        query = """
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_type = 'BASE TABLE'
+              AND table_schema = %s
+            ORDER BY table_name;
+        """
+        with conn.cursor() as cur:
+            cur.execute(query, (schema_name,))
+            return [row[0] for row in cur.fetchall()]
+
+    def get_table_metadata(self, table_name: str, schema_name: str = "public") -> TableMetaData | None:
+        self._ensure_connected()
+        conn = self._connection
+        if conn is None:
+            raise RuntimeError("Not connected to a PostgreSQL database")
+        query = """
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_type = 'BASE TABLE'
+              AND table_schema = %s
+              AND table_name = %s;
+        """
+        with conn.cursor() as cur:
+            cur.execute(query, (schema_name, table_name))
+            if cur.fetchone() is None:
+                return None
+
+        return TableMetaData(
+            name=table_name,
+            schema_name=schema_name,
+            columns=self._get_columns(schema_name, table_name),
+            constraints=self._get_constraints(schema_name, table_name),
+            indexes=self._get_indexes(schema_name, table_name),
+        )
+
+    def get_table_stats(self, table_name: str, schema_name: str = "public") -> dict:
+        self._ensure_connected()
+        conn = self._connection
+        if conn is None:
+            raise RuntimeError("Not connected to a PostgreSQL database")
+
+        query = """
+            SELECT
+                c.reltuples::bigint AS estimated_rows,
+                pg_size_pretty(pg_total_relation_size(c.oid)) AS total_size,
+                COALESCE(s.n_live_tup, 0) AS live_tuples,
+                COALESCE(s.n_dead_tup, 0) AS dead_tuples
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            LEFT JOIN pg_stat_user_tables s ON s.relid = c.oid
+            WHERE n.nspname = %s AND c.relname = %s;
+        """
+        with conn.cursor() as cur:
+            cur.execute(query, (schema_name, table_name))
+            row = cur.fetchone()
+            if not row:
+                return {
+                    "table_name": table_name,
+                    "schema_name": schema_name,
+                    "error": f"Table '{table_name}' in schema '{schema_name}' was not found.",
+                }
+
+            estimated_rows = max(0, int(row[0])) if row[0] is not None else 0
+            live_tuples = int(row[2]) if row[2] is not None else 0
+            disk_size = row[1] or "0 bytes"
+            row_count = live_tuples if live_tuples > 0 else estimated_rows
+
+            if row_count == 0:
+                try:
+                    cur.execute(f'SELECT count(*) FROM "{schema_name}"."{table_name}";')
+                    cnt = cur.fetchone()
+                    if cnt:
+                        row_count = cnt[0]
+                except Exception:
+                    pass
+
+            return {
+                "table_name": table_name,
+                "schema_name": schema_name,
+                "row_count": row_count,
+                "disk_size": disk_size,
+                "dead_tuples": row[3],
+            }
