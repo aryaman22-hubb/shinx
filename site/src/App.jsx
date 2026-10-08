@@ -6,6 +6,7 @@ function App() {
   const [bgVisible, setBgVisible] = useState(false)
   const [authTab, setAuthTab] = useState('login')
   const punchlinesRef = useRef([])
+  const authCopyRef = useRef(null)
 
   useEffect(() => {
     // Fade in background 3D effect after hero section renders
@@ -31,6 +32,10 @@ function App() {
     punchlinesRef.current.forEach((el) => {
       if (el) observer.observe(el)
     })
+
+    if (authCopyRef.current) {
+      observer.observe(authCopyRef.current)
+    }
 
     return () => observer.disconnect()
   }, [])
@@ -191,7 +196,7 @@ function App() {
           <div className="auth-section-inner">
 
             {/* Left: copy */}
-            <div className="auth-section-copy">
+            <div className="auth-section-copy animate-punchline" ref={authCopyRef}>
               <h2 className="auth-section-heading">
                 <span className="electrify-wrapper">
                   <span>Ready</span>
