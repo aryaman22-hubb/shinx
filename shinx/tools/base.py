@@ -32,6 +32,17 @@ class Tool:
             return {"error": f"Tool execution error in '{self.name}': {str(e)}"}
 
 
+    def to_langchain_tool(self):
+        """Converts this Tool into a native LangChain StructuredTool."""
+        from langchain_core.tools import StructuredTool
+
+        return StructuredTool.from_function(
+            func=self.func,
+            name=self.name,
+            description=self.description,
+        )
+
+
 class ToolRegistry:
     def __init__(self):
         self._tools: dict[str, Tool] = {}
@@ -53,3 +64,8 @@ class ToolRegistry:
 
     def to_schemas(self) -> list[dict[str, Any]]:
         return [tool.to_schema() for tool in self._tools.values()]
+
+    def to_langchain_tools(self) -> list[Any]:
+        """Returns all registered tools converted to LangChain StructuredTool format."""
+        return [tool.to_langchain_tool() for tool in self._tools.values()]
+
