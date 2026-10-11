@@ -2,7 +2,7 @@
 	import { tv } from "tailwind-variants";
 	import type { InputProps } from './types/Input';
 
-	let { type = "text", placeholder, class: className = "", leftIcon, rightIcon, children, value = $bindable(), ...rest }: InputProps = $props();
+	let { type = "text", placeholder, id, class: className = "", leftIcon, rightIcon, children, value = $bindable(), ...rest }: InputProps = $props();
 
 	const wrapper = tv({
 		base: "relative",
@@ -47,6 +47,7 @@
 	<input
 		{type}
 		{placeholder}
+		{id}
 		bind:value
 		class={input({ hasLeftIcon: !!leftIcon, hasRightIcon: !!rightIcon })}
 		{...rest}

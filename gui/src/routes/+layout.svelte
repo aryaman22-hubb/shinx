@@ -6,6 +6,7 @@
 		Plus,
 		Workflow,
 		Sparkles,
+		FileText,
 	} from "@lucide/svelte";
 
 	import favicon from '#lib/assets/favicon.png';
@@ -16,12 +17,17 @@
 	import Picker from '#lib/components/primitives/Picker.svelte';
 	import Button from '#lib/components/primitives/Button.svelte';
 	import MainSidebar from '#lib/components/ui/MainSidebar.svelte';
+	import DatabaseConnection from '#lib/components/ui/DatabaseConnection.svelte';
 
 	let { children }: LayoutProps = $props();
 
+	let showConnectionModal = $state(false);
+	let plusButtonWrapper = $state<HTMLElement | undefined>(undefined);
+
 	const topItems = [
 		{ icon: Workflow, label: "Data Model", href: "/dashboard" },
-		{ icon: History, label: "Query History", href: "/dashboard/history" },
+		{ icon: History, label: "Query History", href: "/history" },
+		{ icon: FileText, label: "SQL Worksheet", href: "/sql-editor" },
 	];
 	const bottomItems = [
 		{ icon: Settings, label: "Settings", href: "/settings" },
@@ -60,9 +66,15 @@
                     items={databaseOptions}
                     onSelect={handleDatabaseSelect}
                 />
-                <Button variant="icon-bordered" aria-label="Add database">
-                    <Plus size={16} />
-                </Button>
+                <div bind:this={plusButtonWrapper}>
+                    <Button
+                        variant="icon-bordered"
+                        aria-label="Add database"
+                        onclick={() => showConnectionModal = true}
+                    >
+                        <Plus size={16} />
+                    </Button>
+                </div>
             </div>
             <div class="flex items-center gap-2">
                 <Button variant="secondary">Feedback</Button>
@@ -75,4 +87,14 @@
             {@render children()}
         </main>
     </div>
+
+    <DatabaseConnection
+        open={showConnectionModal}
+        onClose={() => showConnectionModal = false}
+        onConnect={(connection) => {
+            console.log('Connecting to database:', connection);
+            // TODO: Implement actual connection logic
+        }}
+        targetElement={plusButtonWrapper}
+    />
 </div>
