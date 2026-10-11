@@ -1,6 +1,7 @@
 export interface InputProps {
 	type?: string;
 	placeholder?: string;
+	id?: string;
 	class?: string;
 	leftIcon?: import('svelte').Snippet;
 	rightIcon?: import('svelte').Snippet;
