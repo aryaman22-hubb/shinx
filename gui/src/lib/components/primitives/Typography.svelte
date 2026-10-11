@@ -1,24 +1,8 @@
 <script lang="ts">
 	import { tv } from "tailwind-variants";
+	import type { TypographyProps, TypographyVariant } from './types/Typography';
 
-	type Variant =
-		| "h1"
-		| "h2"
-		| "h3"
-		| "p"
-		| "bh1"
-		| "bh2"
-		| "bh3"
-		| "bhu1"
-		| "bhu2";
-
-	interface Props {
-		variant: Variant;
-		class?: string;
-		children: import('svelte').Snippet;
-	}
-
-	let { variant, class: className = "", children }: Props = $props();
+	let { variant, class: className = "", children }: TypographyProps = $props();
 
 	const primitive = tv({
 		base: "",
@@ -37,7 +21,7 @@
 		}
 	});
 
-	const tagMap: Record<Variant, keyof HTMLElementTagNameMap> = {
+	const tagMap: Record<TypographyVariant, keyof HTMLElementTagNameMap> = {
 		h1: "h1",
 		h2: "h2",
 		h3: "h3",
