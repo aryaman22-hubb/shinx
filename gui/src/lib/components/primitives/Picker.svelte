@@ -1,16 +1,10 @@
 <script lang="ts">
 	import { tv } from "tailwind-variants";
 	import { ChevronDown } from "@lucide/svelte";
+	import MenuItem from '#lib/components/primitives/MenuItem.svelte';
+	import type { PickerProps, PickerItem } from './types/Picker';
 
-	interface Props {
-		label: string;
-		value?: string;
-		class?: string;
-		children: import('svelte').Snippet;
-		onSelect?: (value: string) => void;
-	}
-
-	let { label, value = label, class: className = "", children, onSelect }: Props = $props();
+	let { label, value = label, class: className = "", children, items, onSelect }: PickerProps = $props();
 
 	let isOpen = $state(false);
 	let pickerRef: HTMLDivElement;
@@ -45,16 +39,29 @@
 	const dropdown = tv({
 		base: "absolute top-full left-0 mt-1.5 w-full bg-secondary border border-white/10 rounded-md shadow-xl overflow-hidden z-50"
 	});
+
+	const displayValue = $derived(typeof value === 'string' ? value : value?.label || label);
 </script>
 
 <div class={picker({ class: className })} bind:this={pickerRef}>
 	<button class={chip()} onclick={toggle} aria-expanded={isOpen} aria-haspopup="true">
-		<span>{value}</span>
+		<span>{displayValue}</span>
 		<ChevronDown size={16} class={isOpen ? "rotate-180 transition-transform" : "transition-transform"} />
 	</button>
 	{#if isOpen}
 		<div class={dropdown()} role="menu">
-			{@render children()}
+			{#if items}
+				{#each items as item}
+					<MenuItem onclick={() => {
+						onSelect?.(item);
+						isOpen = false;
+					}}>
+						{item.label}
+					</MenuItem>
+				{/each}
+			{:else if children}
+				{@render children()}
+			{/if}
 		</div>
 	{/if}
 </div>

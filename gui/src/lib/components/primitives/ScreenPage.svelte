@@ -1,15 +1,8 @@
 <script lang="ts">
 	import { tv } from "tailwind-variants";
+	import type { ScreenPageProps } from './types/ScreenPage';
 
-	type Variant = "padded" | "centered" | "full";
-
-	interface Props {
-		variant?: Variant;
-		class?: string;
-		children: import('svelte').Snippet;
-	}
-
-	let { variant = "full", class: className = "", children }: Props = $props();
+	let { variant = "full", class: className = "", children }: ScreenPageProps = $props();
 
 	const screenPage = tv({
 		base: "h-full bg-secondary",
