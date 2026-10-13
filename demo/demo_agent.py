@@ -12,8 +12,7 @@ except ImportError:
 
 from shinx.agents.optimizer_agent import OptimizerAgent
 from shinx.db import DatabaseAdapter
-from shinx.services.llm_service import LLMService
-from shinx.services.providers.gemini_provider import GeminiProvider
+from shinx.services.llm_factory import get_chat_model
 from shinx.shared.models.db_metadata import Column, Constraint, DBMetadata, Index, TableMetaData
 from shinx.shared.models.plan_node import PlanNode
 from shinx.tools import create_db_tool_registry
@@ -127,17 +126,20 @@ def main():
     adapter = SampleMockDatabaseAdapter()
     tools = create_db_tool_registry(adapter)
 
-    has_api_key = bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+    has_api_key = bool(
+        os.getenv("GEMINI_API_KEY")
+        or os.getenv("GOOGLE_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+    )
     if not has_api_key:
-        print("[!] Note: GEMINI_API_KEY is not detected in environment.")
-        print("    Running offline simulated verification...\n")
-        from tests.test_optimizer_agent import ScriptedMockLLMProvider
-        provider = ScriptedMockLLMProvider()
+        print("[!] Note: No LLM API key (GEMINI_API_KEY, GOOGLE_API_KEY, or OPENAI_API_KEY) detected in environment.")
+        print("    Running offline simulated verification with LangChain Mock Model...\n")
+        from tests.test_optimizer_agent import ScriptedMockChatModel
+        llm = ScriptedMockChatModel()
     else:
-        provider = GeminiProvider()
+        llm = get_chat_model()
 
-    llm_service = LLMService(provider)
-    agent = OptimizerAgent(llm=llm_service, tools=tools, verbose=True)
+    agent = OptimizerAgent(llm=llm, tools=tools, verbose=True)
     report = agent.optimize(query)
     print_report(report)
 
