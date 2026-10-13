@@ -1,16 +1,15 @@
 import json
 from unittest import TestCase, main
 
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import AIMessage
-from langchain_core.outputs import ChatGeneration, ChatResult
-
-from shinx.agents.optimizer_agent import OptimizerAgent
 from shinx.db import DatabaseAdapter
+from shinx.services.llm_service import LLMService
+from shinx.services.providers.base import BaseLLMProvider
 from shinx.shared.models.db_metadata import Column, Constraint, DBMetadata, Index, TableMetaData
+from shinx.shared.models.llm import LLMMessage, LLMResponse, ToolCall
 from shinx.shared.models.plan_node import PlanNode
 from shinx.shared.models.suggestion import ImpactLevel, OptimizationReport, SuggestionType
 from shinx.tools import create_db_tool_registry
+from shinx.agents.optimizer_agent import OptimizerAgent
 
 
 class MockDatabaseAdapter(DatabaseAdapter):
@@ -81,40 +80,33 @@ class MockDatabaseAdapter(DatabaseAdapter):
         return {"error": f"Table '{table_name}' not found."}
 
 
-class ScriptedMockChatModel(BaseChatModel):
-    call_count: int = 0
+class ScriptedMockLLMProvider(BaseLLMProvider):
+    def __init__(self):
+        self.call_count = 0
 
-    @property
-    def _llm_type(self) -> str:
-        return "scripted_mock"
-
-    def _generate(self, messages, stop=None, run_manager=None, **kwargs):
+    def generate(self, messages: list[LLMMessage], tools=None) -> LLMResponse:
         self.call_count += 1
 
         if self.call_count == 1:
-            msg = AIMessage(
-                content="",
+            return LLMResponse(
                 tool_calls=[
-                    {
-                        "name": "explain_query",
-                        "args": {"query": "SELECT * FROM members WHERE email = 'test@example.com';"},
-                        "id": "call_1",
-                    }
-                ],
+                    ToolCall(
+                        id="call_1",
+                        name="explain_query",
+                        arguments={"query": "SELECT * FROM members WHERE email = 'test@example.com';"},
+                    )
+                ]
             )
-            return ChatResult(generations=[ChatGeneration(message=msg)])
         elif self.call_count == 2:
-            msg = AIMessage(
-                content="",
+            return LLMResponse(
                 tool_calls=[
-                    {
-                        "name": "inspect_table",
-                        "args": {"table_name": "members"},
-                        "id": "call_2",
-                    }
-                ],
+                    ToolCall(
+                        id="call_2",
+                        name="inspect_table",
+                        arguments={"table_name": "members"},
+                    )
+                ]
             )
-            return ChatResult(generations=[ChatGeneration(message=msg)])
         else:
             final_report = {
                 "query": "SELECT * FROM members WHERE email = 'test@example.com';",
@@ -132,19 +124,17 @@ class ScriptedMockChatModel(BaseChatModel):
                 ],
                 "database_engine": "PostgreSQL 16.0",
             }
-            return ChatResult(generations=[ChatGeneration(message=AIMessage(content=json.dumps(final_report)))])
-
-    def bind_tools(self, tools, **kwargs):
-        return self
+            return LLMResponse(content=json.dumps(final_report))
 
 
 class TestOptimizerAgent(TestCase):
     def test_agent_investigation_loop(self):
         adapter = MockDatabaseAdapter()
         tools = create_db_tool_registry(adapter)
-        mock_llm = ScriptedMockChatModel()
+        mock_provider = ScriptedMockLLMProvider()
+        llm_service = LLMService(mock_provider)
 
-        agent = OptimizerAgent(llm=mock_llm, tools=tools, verbose=True)
+        agent = OptimizerAgent(llm=llm_service, tools=tools, verbose=True)
         report = agent.optimize("SELECT * FROM members WHERE email = 'test@example.com';")
 
         self.assertIsInstance(report, OptimizationReport)
@@ -153,7 +143,7 @@ class TestOptimizerAgent(TestCase):
         self.assertEqual(suggestion.type, SuggestionType.INDEX_CREATION)
         self.assertEqual(suggestion.impact, ImpactLevel.HIGH)
         self.assertIn("CREATE INDEX idx_members_email", suggestion.suggested_sql)
-        self.assertEqual(mock_llm.call_count, 3)
+        self.assertEqual(mock_provider.call_count, 3)
 
     def test_security_filter_on_mutations(self):
         adapter = MockDatabaseAdapter()
