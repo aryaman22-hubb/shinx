@@ -1,6 +1,9 @@
 import os
 from typing import Any
+from dotenv import load_dotenv
 from langchain_core.language_models.chat_models import BaseChatModel
+
+load_dotenv()
 
 
 def get_chat_model(
@@ -17,7 +20,7 @@ def get_chat_model(
     
     Environment variables:
         SHINX_LLM_PROVIDER: "google_genai" (default) or "openai"
-        SHINX_LLM_MODEL: e.g. "gemini-1.5-flash", "gpt-4o", etc.
+        SHINX_LLM_MODEL: e.g. "gemini-3.5-flash-lite", "gpt-4o", etc.
         GEMINI_API_KEY / GOOGLE_API_KEY: API key for Google GenAI
         OPENAI_API_KEY: API key for OpenAI
     """
@@ -34,7 +37,7 @@ def get_chat_model(
             os.getenv("GEMINI_API_KEY")
             or os.getenv("GOOGLE_API_KEY")
         )
-        model_name = model or os.getenv("SHINX_LLM_MODEL") or "gemini-1.5-flash"
+        model_name = model or os.getenv("SHINX_LLM_MODEL") or "gemini-3.5-flash-lite"
 
         return ChatGoogleGenerativeAI(
             model=model_name,

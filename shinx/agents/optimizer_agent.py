@@ -58,6 +58,22 @@ class OptimizerAgent:
         if self.verbose:
             print(f"[OptimizerAgent] {message}")
 
+    @staticmethod
+    def _extract_text(content: Any) -> str:
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            texts = []
+            for part in content:
+                if isinstance(part, dict) and "text" in part:
+                    texts.append(part["text"])
+                elif isinstance(part, str):
+                    texts.append(part)
+                else:
+                    texts.append(str(part))
+            return "\n".join(texts)
+        return str(content)
+
     def optimize(self, query: str) -> OptimizationReport:
         self._log(f"Starting investigation for query: {query.strip()[:80]}...")
 
@@ -121,7 +137,7 @@ class OptimizerAgent:
                     )
             else:
                 self._log("LLM completed investigation and returned final recommendations.")
-                final_content = response.content if isinstance(response.content, str) else str(response.content)
+                final_content = self._extract_text(response.content)
                 break
         else:
             self._log("Reached maximum turn limit. Requesting final synthesis...")
@@ -134,7 +150,7 @@ class OptimizerAgent:
                 )
             )
             final_res = self.llm.invoke(messages)
-            final_content = final_res.content if isinstance(final_res.content, str) else str(final_res.content)
+            final_content = self._extract_text(final_res.content)
 
         # 1. Try parsing directly from the model's final response if valid JSON was returned
         if final_content:
