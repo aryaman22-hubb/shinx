@@ -1,16 +1,14 @@
 from typing import Any
 
+from langchain_core.tools import BaseTool, tool
+
 from shinx.db import DatabaseAdapter
-from shinx.tools.base import Tool
 
 
-def create_database_info_tool(adapter: DatabaseAdapter) -> Tool:
+def create_database_info_tool(adapter: DatabaseAdapter) -> BaseTool:
+    @tool
     def get_database_info() -> dict[str, Any]:
+        """Fetches database version and installed extensions."""
         return adapter.get_database_info()
 
-    return Tool(
-        name="get_database_info",
-        description="Fetches database version and installed extensions.",
-        parameters={"type": "object", "properties": {}},
-        func=get_database_info,
-    )
+    return get_database_info
