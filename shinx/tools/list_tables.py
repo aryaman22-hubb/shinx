@@ -1,26 +1,18 @@
-from typing import Any
+from typing import Annotated, Any
+
+from langchain_core.tools import BaseTool, tool
+from pydantic import Field
 
 from shinx.db import DatabaseAdapter
-from shinx.tools.base import Tool
 
 
-def create_list_tables_tool(adapter: DatabaseAdapter) -> Tool:
-    def list_tables(schema_name: str = "public") -> dict[str, Any]:
+def create_list_tables_tool(adapter: DatabaseAdapter) -> BaseTool:
+    @tool
+    def list_tables(
+        schema_name: Annotated[str, Field(description="The schema name, defaults to 'public'.")] = "public",
+    ) -> dict[str, Any]:
+        """Lists all user tables present in the database schema."""
         tables = adapter.list_table_names(schema_name)
         return {"schema": schema_name, "tables": tables}
 
-    return Tool(
-        name="list_tables",
-        description="Lists all user tables present in the database schema.",
-        parameters={
-            "type": "object",
-            "properties": {
-                "schema_name": {
-                    "type": "string",
-                    "description": "The schema name, defaults to 'public'.",
-                    "default": "public",
-                }
-            },
-        },
-        func=list_tables,
-    )
+    return list_tables
